@@ -1,17 +1,12 @@
-<?php
-require_once __DIR__ . '/../includes/functions.php';
-increment_plays('memory');
-$title = 'Memory Match';
-?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?> — Dulinan</title>
-    <link rel="icon" type="image/png" href="<?= favicon_url() ?>">
-    <script src="<?= url('assets/js/theme-init.js') ?>"></script>
-    <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
+    <title>Memory Match — Dulinan</title>
+    <link rel="icon" type="image/png" href="../assets/img/favicon.png">
+    <script src="../assets/js/theme-init.js"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         .mem-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
         .mem-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:min(400px,92vw); }
@@ -34,8 +29,8 @@ $title = 'Memory Match';
 <body class="play-page">
 
 <div class="play-header">
-    <a href="<?= url('index.php') ?>" class="back-btn">← Kembali</a>
-    <span class="play-title"><?= $title ?></span>
+    <a href="../index.html" class="back-btn">← Kembali</a>
+    <span class="play-title">Memory Match</span>
     <div style="margin-left:auto;display:flex;gap:8px;">
         <button id="themeToggle" class="theme-btn" title="Ganti tema" aria-label="Ganti tema">
             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -105,6 +100,6 @@ $title = 'Memory Match';
 })();
 </script>
 
-<script src="<?= url('assets/js/app.js') ?>"></script>
+<script src="../assets/js/app.js"></script>
 </body>
 </html>
