@@ -1,0 +1,139 @@
+<?php
+require_once __DIR__ . '/../includes/functions.php';
+increment_plays('snake');
+$title = 'Snake';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $title ?> — Dulinan</title>
+    <link rel="icon" type="image/png" href="<?= favicon_url() ?>">
+    <script src="<?= url('assets/js/theme-init.js') ?>"></script>
+    <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
+    <style>
+        .snake-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+        .snake-stats { display:flex; gap:12px; font-size:14px; font-weight:600; }
+        .snake-stats span { background:var(--bg-elevated); padding:8px 14px; border-radius:10px;
+            border:1px solid var(--border); }
+        canvas { background:#0f172a; border-radius:16px; box-shadow:var(--shadow-lg);
+            width:min(440px,92vw); height:auto; }
+        .snake-hint { color:var(--text-secondary); font-size:13px; }
+    </style>
+</head>
+<body class="play-page">
+
+<div class="play-header">
+    <a href="<?= url('index.php') ?>" class="back-btn">← Kembali</a>
+    <span class="play-title"><?= $title ?></span>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+        <button id="themeToggle" class="theme-btn" title="Ganti tema" aria-label="Ganti tema">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<div class="game-stage">
+    <div class="snake-wrap">
+        <div class="snake-stats">
+            <span>Skor: <span id="sScore">0</span></span>
+            <span>Best: <span id="sBest">0</span></span>
+        </div>
+        <canvas id="snakeCanvas" width="440" height="440"></canvas>
+        <div class="snake-hint">Gunakan tombol panah · Tekan spasi untuk pause</div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const canvas = document.getElementById('snakeCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('sScore');
+    const bestEl  = document.getElementById('sBest');
+    const CELL = 20, COLS = canvas.width / CELL, ROWS = canvas.height / CELL;
+    let snake, dir, nextDir, food, score, best, loop, paused;
+
+    best = +(localStorage.getItem('bestSnake') || 0);
+    bestEl.textContent = best;
+
+    function reset(){
+        snake = [{x:10,y:10}];
+        dir = {x:0,y:0};
+        nextDir = {x:0,y:0};
+        score = 0; scoreEl.textContent = 0;
+        placeFood();
+        paused = false;
+        clearInterval(loop);
+        loop = setInterval(tick, 120);
+    }
+    function placeFood(){
+        do {
+            food = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+        } while (snake.some(s => s.x === food.x && s.y === food.y));
+    }
+    function tick(){
+        if(paused) return;
+        if(nextDir.x || nextDir.y) dir = nextDir;
+        if(!dir.x && !dir.y) { draw(); return; }
+        const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+        if(head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS
+            || snake.some(s => s.x === head.x && s.y === head.y)){
+            clearInterval(loop);
+            if(score > best){ best = score; localStorage.setItem('bestSnake', best); bestEl.textContent = best; }
+            setTimeout(()=>{ alert('Game Over! Skor: '+score); reset(); }, 100);
+            return;
+        }
+        snake.unshift(head);
+        if(head.x === food.x && head.y === food.y){
+            score += 10; scoreEl.textContent = score;
+            if(score > best){ best = score; localStorage.setItem('bestSnake', best); bestEl.textContent = best; }
+            placeFood();
+        } else {
+            snake.pop();
+        }
+        draw();
+    }
+    function draw(){
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(food.x*CELL + CELL/2, food.y*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
+        ctx.fill();
+        snake.forEach((s,i)=>{
+            ctx.fillStyle = i === 0 ? '#10b981' : '#34d399';
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(s.x*CELL + 1, s.y*CELL + 1, CELL - 2, CELL - 2, 6);
+            } else {
+                ctx.rect(s.x*CELL + 1, s.y*CELL + 1, CELL - 2, CELL - 2);
+            }
+            ctx.fill();
+        });
+    }
+    document.addEventListener('keydown', e => {
+        const map = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0} };
+        if(map[e.key]){
+            e.preventDefault();
+            const d = map[e.key];
+            if(d.x === -dir.x && d.y === -dir.y) return;
+            nextDir = d;
+        }
+        if(e.key === ' '){ e.preventDefault(); paused = !paused; }
+    });
+    reset();
+})();
+</script>
+
+<script src="<?= url('assets/js/app.js') ?>"></script>
+</body>
+</html>

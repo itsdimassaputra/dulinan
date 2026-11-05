@@ -1,0 +1,110 @@
+<?php
+require_once __DIR__ . '/../includes/functions.php';
+increment_plays('memory');
+$title = 'Memory Match';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $title ?> — Dulinan</title>
+    <link rel="icon" type="image/png" href="<?= favicon_url() ?>">
+    <script src="<?= url('assets/js/theme-init.js') ?>"></script>
+    <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
+    <style>
+        .mem-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+        .mem-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:min(400px,92vw); }
+        .card { aspect-ratio:1; perspective:800px; cursor:pointer; }
+        .card-inner { position:relative; width:100%; height:100%;
+            transition:transform .4s cubic-bezier(.4,0,.2,1); transform-style:preserve-3d; }
+        .card.flipped .card-inner { transform:rotateY(180deg); }
+        .card-face { position:absolute; inset:0; border-radius:12px;
+            display:grid; place-items:center; font-size:32px;
+            backface-visibility:hidden; -webkit-backface-visibility:hidden;
+            box-shadow:var(--shadow-md); }
+        .card-back { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:20px; }
+        .card-front { background:var(--bg-elevated); border:1px solid var(--border); transform:rotateY(180deg); }
+        .card.matched .card-front { background:#f0fdf4; border-color:#bbf7d0; }
+        .mem-stats { display:flex; gap:12px; font-size:14px; font-weight:600; }
+        .mem-stats span { background:var(--bg-elevated); padding:8px 14px; border-radius:10px;
+            border:1px solid var(--border); }
+    </style>
+</head>
+<body class="play-page">
+
+<div class="play-header">
+    <a href="<?= url('index.php') ?>" class="back-btn">← Kembali</a>
+    <span class="play-title"><?= $title ?></span>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+        <button id="themeToggle" class="theme-btn" title="Ganti tema" aria-label="Ganti tema">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<div class="game-stage">
+    <div class="mem-wrap">
+        <div class="mem-stats">
+            <span>Langkah: <span id="moves">0</span></span>
+            <span>Pasangan: <span id="pairs">0</span>/8</span>
+        </div>
+        <div class="mem-grid" id="memGrid"></div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const emojis = ['🍎','🍌','🍇','🍓','🍑','🍍','🥝','🍉'];
+    const deck = [...emojis,...emojis].map(v=>({v,id:Math.random()})).sort(()=>Math.random()-0.5);
+    const grid = document.getElementById('memGrid');
+    const movesEl = document.getElementById('moves');
+    const pairsEl = document.getElementById('pairs');
+    let first=null, lock=false, moves=0, pairs=0;
+
+    deck.forEach(card=>{
+        const el = document.createElement('div');
+        el.className='card';
+        el.innerHTML = `<div class="card-inner">
+            <div class="card-face card-back">?</div>
+            <div class="card-face card-front">${card.v}</div>
+        </div>`;
+        el.dataset.v = card.v;
+        el.addEventListener('click',()=>flip(el));
+        grid.appendChild(el);
+    });
+
+    function flip(el){
+        if(lock || el.classList.contains('flipped')) return;
+        el.classList.add('flipped');
+        if(!first){ first=el; return; }
+        moves++; movesEl.textContent=moves;
+        if(first.dataset.v === el.dataset.v){
+            first.classList.add('matched');
+            el.classList.add('matched');
+            first=null; pairs++; pairsEl.textContent=pairs;
+            if(pairs===8) setTimeout(()=>alert('🎉 Selesai dalam '+moves+' langkah!'),300);
+        } else {
+            lock = true;
+            const a=first;
+            setTimeout(()=>{
+                a.classList.remove('flipped');
+                el.classList.remove('flipped');
+                first=null; lock=false;
+            },800);
+        }
+    }
+})();
+</script>
+
+<script src="<?= url('assets/js/app.js') ?>"></script>
+</body>
+</html>

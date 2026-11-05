@@ -1,0 +1,159 @@
+<?php
+require_once __DIR__ . '/../includes/functions.php';
+increment_plays('2048');
+$title = '2048';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $title ?> — Dulinan</title>
+    <link rel="icon" type="image/png" href="<?= favicon_url() ?>">
+    <script src="<?= url('assets/js/theme-init.js') ?>"></script>
+    <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
+    <style>
+        .g2048-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+        .g2048-score { display:flex; gap:12px; }
+        .g2048-score div { background:var(--bg-elevated); padding:8px 16px; border-radius:12px;
+            border:1px solid var(--border); font-weight:700; font-size:14px;
+            box-shadow:var(--shadow-sm); }
+        .g2048-board { display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+            background:#bbada0; padding:8px; border-radius:16px; width:min(360px,92vw);
+            box-shadow:var(--shadow-lg); }
+        .tile { aspect-ratio:1; background:rgba(238,228,218,0.35); border-radius:8px;
+            display:grid; place-items:center; font-weight:800; font-size:clamp(20px,5vw,30px);
+            color:#776e65; transition:all .12s ease; }
+        .tile[data-v="2"]{background:#eee4da} .tile[data-v="4"]{background:#ede0c8}
+        .tile[data-v="8"]{background:#f2b179;color:#fff} .tile[data-v="16"]{background:#f59563;color:#fff}
+        .tile[data-v="32"]{background:#f67c5f;color:#fff} .tile[data-v="64"]{background:#f65e3b;color:#fff}
+        .tile[data-v="128"]{background:#edcf72;color:#fff;font-size:clamp(16px,4vw,26px)}
+        .tile[data-v="256"]{background:#edcc61;color:#fff;font-size:clamp(16px,4vw,26px)}
+        .tile[data-v="512"]{background:#edc850;color:#fff;font-size:clamp(16px,4vw,26px)}
+        .tile[data-v="1024"]{background:#edc53f;color:#fff;font-size:clamp(13px,3vw,22px)}
+        .tile[data-v="2048"]{background:#edc22e;color:#fff;font-size:clamp(13px,3vw,22px);
+            box-shadow:0 0 20px rgba(237,194,46,.6)}
+        .g2048-hint { color:var(--text-secondary); font-size:13px; }
+        .btn-reset { padding:10px 20px; background:var(--text); color:var(--bg);
+            border-radius:12px; font-weight:600; font-size:14px; }
+    </style>
+</head>
+<body class="play-page">
+
+<div class="play-header">
+    <a href="<?= url('index.php') ?>" class="back-btn">← Kembali</a>
+    <span class="play-title"><?= $title ?></span>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+        <button id="themeToggle" class="theme-btn" title="Ganti tema" aria-label="Ganti tema">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<div class="game-stage">
+    <div class="g2048-wrap">
+        <div class="g2048-score">
+            <div>Skor: <span id="score">0</span></div>
+            <div>Best: <span id="best">0</span></div>
+        </div>
+        <div class="g2048-board" id="board"></div>
+        <div class="g2048-hint">Gunakan tombol panah atau geser untuk bermain</div>
+        <button class="btn-reset" id="reset">Main Ulang</button>
+    </div>
+</div>
+
+<script>
+(function(){
+    const boardEl = document.getElementById('board');
+    const scoreEl = document.getElementById('score');
+    const bestEl  = document.getElementById('best');
+    let size = 4, grid, score = 0;
+    let best = +(localStorage.getItem('best2048') || 0);
+    bestEl.textContent = best;
+
+    function init(){
+        grid = Array.from({length:size},()=>Array(size).fill(0));
+        score = 0; scoreEl.textContent = 0;
+        spawn(); spawn(); render();
+    }
+    function spawn(){
+        const empty = [];
+        for(let r=0;r<size;r++) for(let c=0;c<size;c++)
+            if(!grid[r][c]) empty.push([r,c]);
+        if(!empty.length) return;
+        const [r,c] = empty[Math.floor(Math.random()*empty.length)];
+        grid[r][c] = Math.random()<0.9 ? 2 : 4;
+    }
+    function render(){
+        boardEl.innerHTML = '';
+        for(let r=0;r<size;r++) for(let c=0;c<size;c++){
+            const d = document.createElement('div');
+            d.className = 'tile';
+            const v = grid[r][c];
+            if(v) { d.dataset.v = v; d.textContent = v; }
+            boardEl.appendChild(d);
+        }
+    }
+    function slide(row){
+        let arr = row.filter(v=>v);
+        for(let i=0;i<arr.length-1;i++){
+            if(arr[i]===arr[i+1]){
+                arr[i]*=2; score+=arr[i];
+                if(arr[i] > best){ best=arr[i]; bestEl.textContent=best; localStorage.setItem('best2048',best); }
+                arr.splice(i+1,1);
+            }
+        }
+        while(arr.length<size) arr.push(0);
+        return arr;
+    }
+    function move(dir){
+        const before = JSON.stringify(grid);
+        for(let i=0;i<size;i++){
+            let line;
+            if(dir==='left'||dir==='right'){
+                line = grid[i].slice();
+                if(dir==='right') line.reverse();
+                line = slide(line);
+                if(dir==='right') line.reverse();
+                grid[i] = line;
+            } else {
+                line = grid.map(r=>r[i]);
+                if(dir==='down') line.reverse();
+                line = slide(line);
+                if(dir==='down') line.reverse();
+                for(let r=0;r<size;r++) grid[r][i] = line[r];
+            }
+        }
+        if(JSON.stringify(grid)!==before){ spawn(); render(); scoreEl.textContent=score; }
+    }
+    document.addEventListener('keydown',e=>{
+        const map={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};
+        if(map[e.key]){ e.preventDefault(); move(map[e.key]); }
+    });
+    let tsX=0, tsY=0;
+    boardEl.addEventListener('touchstart',e=>{
+        tsX=e.touches[0].clientX; tsY=e.touches[0].clientY;
+    },{passive:true});
+    boardEl.addEventListener('touchend',e=>{
+        const dx=e.changedTouches[0].clientX-tsX;
+        const dy=e.changedTouches[0].clientY-tsY;
+        if(Math.max(Math.abs(dx),Math.abs(dy))<30) return;
+        if(Math.abs(dx)>Math.abs(dy)) move(dx>0?'right':'left');
+        else move(dy>0?'down':'up');
+    });
+    document.getElementById('reset').onclick = init;
+    init();
+})();
+</script>
+
+<script src="<?= url('assets/js/app.js') ?>"></script>
+</body>
+</html>

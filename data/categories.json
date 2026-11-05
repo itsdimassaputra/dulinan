@@ -1,0 +1,6 @@
+[
+    { "id": "puzzle", "name": "Puzzle" },
+    { "id": "arcade", "name": "Arcade" },
+    { "id": "memory", "name": "Memory" },
+    { "id": "action", "name": "Action" }
+]

@@ -1,0 +1,35 @@
+[
+    {
+        "slug": "2048",
+        "name": "2048",
+        "description": "Gabungkan angka hingga mencapai 2048. Game puzzle legendaris yang bikin ketagihan!",
+        "category": "puzzle",
+        "icon": "🔢",
+        "color": "#f59e0b",
+        "active": true,
+        "plays": 1245,
+        "created_at": "2025-01-10"
+    },
+    {
+        "slug": "memory",
+        "name": "Memory Match",
+        "description": "Temukan pasangan kartu yang sama. Latih daya ingatmu!",
+        "category": "memory",
+        "icon": "🧠",
+        "color": "#8b5cf6",
+        "active": true,
+        "plays": 891,
+        "created_at": "2025-01-12"
+    },
+    {
+        "slug": "snake",
+        "name": "Snake",
+        "description": "Kendalikan ular, makan buah, dan jangan menabrak dirimu sendiri!",
+        "category": "arcade",
+        "icon": "🐍",
+        "color": "#10b981",
+        "active": true,
+        "plays": 2102,
+        "created_at": "2025-01-08"
+    }
+]
