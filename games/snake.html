@@ -1,134 +1,419 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake — Dulinan</title>
-    <link rel="icon" type="image/png" href="../assets/img/favicon.png">
-    <script src="../assets/js/theme-init.js"></script>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .snake-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
-        .snake-stats { display:flex; gap:12px; font-size:14px; font-weight:600; }
-        .snake-stats span { background:var(--bg-elevated); padding:8px 14px; border-radius:10px;
-            border:1px solid var(--border); }
-        canvas { background:#0f172a; border-radius:16px; box-shadow:var(--shadow-lg);
-            width:min(440px,92vw); height:auto; }
-        .snake-hint { color:var(--text-secondary); font-size:13px; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#050912">
+<title>Snake 3D — Dulinan</title>
+<link rel="icon" type="image/png" href="../assets/img/favicon.png">
+<script src="../assets/js/theme-init.js"></script>
+<style>
+/* ===== CSS STYLING ===== */
+:root{--g:#39ff88;--c:#22e6ff;--b:#3b82ff;--r:#ff3b5c;--glass:rgba(12,20,40,.55)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;color:#e8f1ff;font-family:Inter,"Segoe UI",system-ui,sans-serif;background:radial-gradient(ellipse at 50% 30%,#0d1b3a 0%,#060b18 55%,#03050c 100%)}
+body::before{content:"";position:fixed;inset:-20%;pointer-events:none;background:radial-gradient(circle at 20% 30%,rgba(34,230,255,.14),transparent 40%),radial-gradient(circle at 80% 70%,rgba(57,255,136,.12),transparent 40%);animation:drift 14s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(4%,3%) scale(1.1)}}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.screen{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}
+.screen.on{opacity:1;visibility:visible}
+#menu{background:radial-gradient(ellipse at center,rgba(5,9,18,.3),rgba(5,9,18,.82))}
+#pause,#over{background:rgba(3,6,14,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.logo{margin:0;font-size:clamp(44px,13vw,104px);font-weight:900;letter-spacing:.06em;line-height:1;background:linear-gradient(90deg,var(--g),var(--c),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px rgba(34,230,255,.45))}
+.sub{margin:0 0 12px;opacity:.75;letter-spacing:.2em;font-size:clamp(10px,3vw,14px);text-transform:uppercase}
+h2{margin:0;font-size:clamp(34px,10vw,64px);letter-spacing:.1em}
+.over-t{color:var(--r);text-shadow:0 0 28px rgba(255,59,92,.6)}
+.pause-t{color:var(--c);text-shadow:0 0 28px rgba(34,230,255,.5)}
+.screen.on .pop{animation:pop .55s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.btn{width:min(280px,76vw);padding:15px 20px;border-radius:14px;font-family:inherit;font-weight:700;font-size:16px;letter-spacing:.18em;cursor:pointer;border:2px solid transparent;transition:transform .15s,box-shadow .25s,background .25s}
+.btn:active{transform:scale(.95)}
+.go{background:var(--g);color:#031209;box-shadow:0 0 24px rgba(57,255,136,.45)}
+.go:hover{box-shadow:0 0 42px rgba(57,255,136,.85);transform:translateY(-2px)}
+.ex{background:transparent;color:var(--r);border-color:var(--r)}
+.ex:hover{background:rgba(255,59,92,.14);box-shadow:0 0 24px rgba(255,59,92,.45);transform:translateY(-2px)}
+.ghost{background:var(--glass);color:#e8f1ff;border-color:rgba(34,230,255,.35)}
+.ghost:hover{border-color:var(--c);box-shadow:0 0 20px rgba(34,230,255,.35);transform:translateY(-2px)}
+.best{margin-top:10px;letter-spacing:.2em;font-size:13px;opacity:.85}.best b{color:var(--g);font-size:20px;margin-left:6px}
+.hint{margin:4px 0 0;font-size:12px;line-height:1.7;opacity:.55;letter-spacing:.06em}
+.row{display:flex;gap:26px;margin:4px 0 8px}.row div{font-size:11px;letter-spacing:.2em;opacity:.9}.row b{display:block;font-size:30px;color:var(--c);letter-spacing:0}
+#nb{color:var(--g);letter-spacing:.2em;font-size:13px;display:none}
+#hud{position:fixed;top:0;left:0;right:0;z-index:3;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px 4px;opacity:0;visibility:hidden;transition:opacity .3s;pointer-events:none}
+#hud.on{opacity:1;visibility:visible}
+.st{flex:1 1 60px;max-width:130px;padding:6px 10px;background:var(--glass);border:1px solid rgba(34,230,255,.2);border-radius:12px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.st small{display:block;font-size:9px;letter-spacing:.18em;opacity:.6}.st b{font-size:20px;color:var(--c)}
+.ctl{display:flex;gap:8px;pointer-events:auto}
+.ib{width:42px;height:42px;border-radius:12px;background:var(--glass);color:#e8f1ff;border:1px solid rgba(34,230,255,.3);font-size:15px;cursor:pointer;transition:.2s}
+.ib:hover{border-color:var(--c);box-shadow:0 0 14px rgba(34,230,255,.4)}.ib:active{transform:scale(.9)}.ib.off{opacity:.45;text-decoration:line-through}
+#dpad{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;display:none;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(3,60px);gap:6px;touch-action:none}
+@media (pointer:coarse),(max-width:700px){#dpad.on{display:grid}}
+.d{border-radius:16px;background:rgba(34,230,255,.1);border:1px solid rgba(34,230,255,.4);color:var(--c);font-size:24px;touch-action:none;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.d:active{background:rgba(34,230,255,.35);box-shadow:0 0 18px rgba(34,230,255,.6)}
+</style>
 </head>
-<body class="play-page">
+<body>
+<!-- ===== HTML STRUCTURE ===== -->
+<canvas id="cv"></canvas>
 
-<div class="play-header">
-    <a href="../" class="back-btn">← Kembali</a>
-    <span class="play-title">Snake</span>
-    <div style="margin-left:auto;display:flex;gap:8px;">
-        <button id="themeToggle" class="theme-btn" title="Ganti tema" aria-label="Ganti tema">
-            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
-            </svg>
-            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-        </button>
-    </div>
+<div id="hud">
+  <div class="st"><small>SCORE</small><b id="hScore">0</b></div>
+  <div class="st"><small>BEST</small><b id="hBest">0</b></div>
+  <div class="st"><small>LEVEL</small><b id="hLevel">1</b></div>
+  <div class="st"><small>SPEED</small><b id="hSpeed">1.0x</b></div>
+  <div class="ctl">
+    <button class="ib" id="pauseBtn" title="Pause / Resume" aria-label="Pause">❚❚</button>
+    <button class="ib" id="restartBtn" title="Restart" aria-label="Restart">↻</button>
+    <button class="ib" id="soundBtn" title="Sound On/Off" aria-label="Sound">♪</button>
+  </div>
 </div>
 
-<div class="game-stage">
-    <div class="snake-wrap">
-        <div class="snake-stats">
-            <span>Skor: <span id="sScore">0</span></span>
-            <span>Best: <span id="sBest">0</span></span>
-        </div>
-        <canvas id="snakeCanvas" width="440" height="440"></canvas>
-        <div class="snake-hint">Gunakan tombol panah · Tekan spasi untuk pause</div>
-    </div>
+<div id="dpad" oncontextmenu="return false">
+  <button class="d" data-d="0,-1" style="grid-area:1/2" aria-label="Up">↑</button>
+  <button class="d" data-d="-1,0" style="grid-area:2/1" aria-label="Left">←</button>
+  <button class="d" data-d="1,0" style="grid-area:2/3" aria-label="Right">→</button>
+  <button class="d" data-d="0,1" style="grid-area:3/2" aria-label="Down">↓</button>
 </div>
 
+<section id="menu" class="screen on">
+  <h1 class="logo">SNAKE 3D</h1>
+  <p class="sub">A Classic Game, Reimagined in 3D</p>
+  <button id="startBtn" class="btn go">START GAME</button>
+  <button id="exitGameBtn" class="btn ex">EXIT GAME</button>
+  <div class="best">BEST SCORE <b id="menuBest">0</b></div>
+  <p class="hint">Desktop: Arrow Keys / WASD &bull; Space = Pause<br>Mobile: Swipe or D-Pad</p>
+</section>
+
+<section id="pause" class="screen">
+  <h2 class="pause-t pop">PAUSED</h2>
+  <button id="resumeBtn" class="btn go">RESUME</button>
+  <button id="pRestartBtn" class="btn ghost">RESTART</button>
+  <button id="pMenuBtn" class="btn ghost">BACK TO MENU</button>
+</section>
+
+<section id="over" class="screen">
+  <h2 class="over-t pop">GAME OVER</h2>
+  <div id="nb">★ NEW BEST SCORE ★</div>
+  <div class="row"><div>FINAL SCORE<b id="oScore">0</b></div><div>BEST SCORE<b id="oBest">0</b></div><div>LEVEL REACHED<b id="oLevel">1</b></div></div>
+  <button id="againBtn" class="btn go">PLAY AGAIN</button>
+  <button id="oMenuBtn" class="btn ghost">BACK TO MENU</button>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-(function(){
-    const canvas = document.getElementById('snakeCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('sScore');
-    const bestEl  = document.getElementById('sBest');
-    const CELL = 20, COLS = canvas.width / CELL, ROWS = canvas.height / CELL;
-    let snake, dir, nextDir, food, score, best, loop, paused;
+(() => {
+'use strict';
+const N = 20, $ = id => document.getElementById(id);
 
-    best = +(localStorage.getItem('bestSnake') || 0);
-    bestEl.textContent = best;
+/* ===== LOCALSTORAGE MANAGEMENT ===== */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+let best = +store.get('snake3d.best', 0) || 0;
+let soundOn = store.get('snake3d.sound', true) !== false;
 
-    function reset(){
-        snake = [{x:10,y:10}];
-        dir = {x:0,y:0};
-        nextDir = {x:0,y:0};
-        score = 0; scoreEl.textContent = 0;
-        placeFood();
-        paused = false;
-        clearInterval(loop);
-        loop = setInterval(tick, 120);
-    }
-    function placeFood(){
-        do {
-            food = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
-        } while (snake.some(s => s.x === food.x && s.y === food.y));
-    }
-    function tick(){
-        if(paused) return;
-        if(nextDir.x || nextDir.y) dir = nextDir;
-        if(!dir.x && !dir.y) { draw(); return; }
-        const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-        if(head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS
-            || snake.some(s => s.x === head.x && s.y === head.y)){
-            clearInterval(loop);
-            if(score > best){ best = score; localStorage.setItem('bestSnake', best); bestEl.textContent = best; }
-            setTimeout(()=>{ alert('Game Over! Skor: '+score); reset(); }, 100);
-            return;
-        }
-        snake.unshift(head);
-        if(head.x === food.x && head.y === food.y){
-            score += 10; scoreEl.textContent = score;
-            if(score > best){ best = score; localStorage.setItem('bestSnake', best); bestEl.textContent = best; }
-            placeFood();
-        } else {
-            snake.pop();
-        }
-        draw();
-    }
-    function draw(){
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(food.x*CELL + CELL/2, food.y*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
-        ctx.fill();
-        snake.forEach((s,i)=>{
-            ctx.fillStyle = i === 0 ? '#10b981' : '#34d399';
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(s.x*CELL + 1, s.y*CELL + 1, CELL - 2, CELL - 2, 6);
-            } else {
-                ctx.rect(s.x*CELL + 1, s.y*CELL + 1, CELL - 2, CELL - 2);
-            }
-            ctx.fill();
-        });
-    }
-    document.addEventListener('keydown', e => {
-        const map = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0} };
-        if(map[e.key]){
-            e.preventDefault();
-            const d = map[e.key];
-            if(d.x === -dir.x && d.y === -dir.y) return;
-            nextDir = d;
-        }
-        if(e.key === ' '){ e.preventDefault(); paused = !paused; }
-    });
-    reset();
+/* ===== AUDIO SYSTEM (WebAudio, diaktifkan setelah interaksi) ===== */
+let ac = null;
+function unlock() {
+  if (!ac) { const A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); }
+  if (ac && ac.state === 'suspended') ac.resume();
+}
+function tone(f, d, type = 'sine', v = .12, to = 0, delay = 0) {
+  if (!soundOn || !ac) return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + .02);
+}
+const sfx = {
+  click: () => tone(520, .07, 'triangle', .08),
+  eat: () => { tone(520, .12, 'sine', .14, 980); tone(980, .1, 'sine', .08, 1400, .07); },
+  start: () => [392, 523, 659, 784].forEach((f, i) => tone(f, .14, 'triangle', .1, 0, i * .07)),
+  over: () => { tone(330, .5, 'sawtooth', .12, 70); tone(220, .6, 'square', .06, 50, .12); }
+};
+
+/* ===== THREE.JS SCENE SETUP ===== */
+const cv = $('cv');
+const R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, powerPreference: 'high-performance' });
+R.setClearColor(0x000000, 0);
+R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
+R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.15;
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(42, 1, .1, 200);
+
+scene.add(new THREE.HemisphereLight(0x6fb8ff, 0x0a1030, .7));
+const sun = new THREE.DirectionalLight(0xffffff, .95);
+sun.position.set(6, 16, 8); sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -.0005;
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 40 });
+scene.add(sun);
+const pl1 = new THREE.PointLight(0x22e6ff, .9, 45); pl1.position.set(-11, 6, -11); scene.add(pl1);
+const pl2 = new THREE.PointLight(0x39ff88, .7, 45); pl2.position.set(11, 6, 11); scene.add(pl2);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(N, N).rotateX(-Math.PI / 2),
+  new THREE.MeshStandardMaterial({ color: 0x0a1530, metalness: .5, roughness: .38 }));
+floor.receiveShadow = true; scene.add(floor);
+const slab = new THREE.Mesh(new THREE.BoxGeometry(N + 1, .6, N + 1), new THREE.MeshStandardMaterial({ color: 0x070d1c, metalness: .6, roughness: .5 }));
+slab.position.y = -.31; scene.add(slab);
+const grid = new THREE.GridHelper(N, N, 0x1e6a9a, 0x123a5c);
+grid.position.y = .01; grid.material.transparent = true; grid.material.opacity = .6; scene.add(grid);
+const bm = new THREE.MeshBasicMaterial({ color: 0x22e6ff });
+[[N + .3, .12, 0, -N / 2 - .06], [N + .3, .12, 0, N / 2 + .06], [.12, N + .3, -N / 2 - .06, 0], [.12, N + .3, N / 2 + .06, 0]].forEach(([w, d, x, z]) => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, .3, d), bm); m.position.set(x, .15, z); scene.add(m);
+});
+
+/* rounded-box geometry (sudut sedikit rounded) */
+function roundedBox(r) {
+  const g = new THREE.BoxGeometry(1, 1, 1, 4, 4, 4), p = g.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3(), k = .5 - r;
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    c.set(Math.max(-k, Math.min(k, v.x)), Math.max(-k, Math.min(k, v.y)), Math.max(-k, Math.min(k, v.z)));
+    v.sub(c).normalize().multiplyScalar(r).add(c); p.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals(); return g;
+}
+
+/* ===== SNAKE MESHES (InstancedMesh body + unique head) ===== */
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: .55, roughness: .22, emissive: 0x052a1c });
+const bodyM = new THREE.InstancedMesh(roundedBox(.2), bodyMat, N * N);
+bodyM.castShadow = true; bodyM.frustumCulled = false; bodyM.count = 0; scene.add(bodyM);
+{ const c = new THREE.Color(); for (let i = 0; i < N * N; i++) { c.setHSL(.4 + .2 * Math.min(i / 22, 1), .95, .5); bodyM.setColorAt(i, c); } bodyM.instanceColor.needsUpdate = true; }
+const headMat = new THREE.MeshStandardMaterial({ color: 0x9ff6ff, metalness: .7, roughness: .15, emissive: 0x0b7a8c });
+const head = new THREE.Group();
+const headBox = new THREE.Mesh(roundedBox(.28), headMat); headBox.scale.set(.98, .92, 1.02); headBox.castShadow = true; head.add(headBox);
+const eyeG = new THREE.SphereGeometry(.1, 12, 10), eyeM = new THREE.MeshBasicMaterial({ color: 0xffffff }), pupG = new THREE.SphereGeometry(.05, 8, 8), pupM = new THREE.MeshBasicMaterial({ color: 0x03121c });
+[-1, 1].forEach(s => {
+  const e = new THREE.Mesh(eyeG, eyeM); e.position.set(s * .24, .14, .36); head.add(e);
+  const p = new THREE.Mesh(pupG, pupM); p.position.set(s * .24, .14, .45); head.add(p);
+});
+scene.add(head);
+function palette(dead) {
+  bodyMat.color.set(dead ? 0xff7080 : 0xffffff); bodyMat.emissive.set(dead ? 0x5a0010 : 0x052a1c);
+  headMat.emissive.set(dead ? 0xff1a3c : 0x0b7a8c); headMat.color.set(dead ? 0xffb0b8 : 0x9ff6ff);
+}
+
+/* ===== FOOD SYSTEM ===== */
+const food = new THREE.Group();
+const orbMat = new THREE.MeshStandardMaterial({ color: 0xff3d9a, emissive: 0xff3d9a, emissiveIntensity: 1.5, roughness: .2 });
+food.add(new THREE.Mesh(new THREE.SphereGeometry(.34, 24, 16), orbMat));
+food.add(new THREE.Mesh(new THREE.SphereGeometry(.55, 16, 12), new THREE.MeshBasicMaterial({ color: 0xff3d9a, transparent: true, opacity: .16, depthWrite: false })));
+const foodLight = new THREE.PointLight(0xff3d9a, 1.2, 7); food.add(foodLight);
+food.visible = false; scene.add(food);
+
+/* particles (pool, tanpa alokasi baru saat game berjalan) */
+const pGeo = new THREE.SphereGeometry(.09, 6, 6);
+const pMatA = new THREE.MeshBasicMaterial({ color: 0xff7ac0 }), pMatB = new THREE.MeshBasicMaterial({ color: 0xff3b5c });
+const parts = [];
+for (let i = 0; i < 48; i++) {
+  const m = new THREE.Mesh(pGeo, pMatA); m.visible = false; scene.add(m);
+  parts.push({ m, v: new THREE.Vector3(), life: 0 });
+}
+function burst(x, z, n, mat) {
+  for (let i = 0, k = 0; i < parts.length && k < n; i++) {
+    const p = parts[i]; if (p.life > 0) continue;
+    p.life = 1; p.m.material = mat; p.m.position.set(x, .6, z); p.m.visible = true;
+    const a = Math.random() * 6.283, s = 2 + Math.random() * 3;
+    p.v.set(Math.cos(a) * s, 3 + Math.random() * 3, Math.sin(a) * s); k++;
+  }
+}
+
+/* ===== GAME STATE MANAGEMENT ===== */
+let state = 'menu', snake, from, dir, queue, foodPos, acc, interval, score, level, eaten;
+let shake = 0, pulse = 0, deadT = 0, overShown = false, foodPop = 0, foodS = 1, headAng = Math.PI / 2, camEl = .8, camAz = 0, camD = 28;
+const calcInt = () => Math.max(70, 165 - (level - 1) * 11);
+const cell = (x, y) => [x - N / 2 + .5, y - N / 2 + .5];
+
+function reset() {
+  snake = [{ x: 6, y: 10 }, { x: 5, y: 10 }, { x: 4, y: 10 }]; from = snake.slice();
+  dir = { x: 1, y: 0 }; queue = []; acc = 0; score = 0; level = 1; eaten = 0; interval = calcInt();
+  shake = 0; pulse = 0; deadT = 0; overShown = false; headAng = Math.PI / 2; palette(false);
+  spawnFood(); updateHud();
+}
+function spawnFood() {
+  const occ = new Set(snake.map(s => s.y * N + s.x)), free = [];
+  for (let i = 0; i < N * N; i++) if (!occ.has(i)) free.push(i);
+  if (!free.length) { foodPos = null; food.visible = false; die(snake[0], true); return; }
+  const i = free[Math.random() * free.length | 0];
+  foodPos = { x: i % N, y: i / N | 0 }; foodS = 0;
+  const [x, z] = cell(foodPos.x, foodPos.y); food.position.set(x, .55, z); food.visible = true;
+}
+
+/* ===== SNAKE MECHANICS + COLLISION DETECTION ===== */
+function setDir(x, y) {
+  if (state !== 'play') return;
+  const l = queue.length ? queue[queue.length - 1] : dir;
+  if ((l.x === x && l.y === y) || (l.x === -x && l.y === -y) || queue.length >= 3) return;
+  queue.push({ x, y });
+}
+function step() {
+  if (queue.length) dir = queue.shift();
+  const h = snake[0], nh = { x: h.x + dir.x, y: h.y + dir.y };
+  const ate = !!foodPos && nh.x === foodPos.x && nh.y === foodPos.y;
+  const blk = ate ? snake : snake.slice(0, -1);
+  if (nh.x < 0 || nh.y < 0 || nh.x >= N || nh.y >= N || blk.some(s => s.x === nh.x && s.y === nh.y)) { die(nh); return; }
+  from = snake.slice(); snake = [nh].concat(snake); if (!ate) snake.pop();
+  while (from.length < snake.length) from.push(from[from.length - 1]);
+  if (ate) eat();
+}
+function eat() {
+  score += 10; eaten++; level = 1 + (eaten / 5 | 0); interval = calcInt();
+  if (score > best) { best = score; store.set('snake3d.best', best); }
+  const [x, z] = cell(foodPos.x, foodPos.y); burst(x, z, 22, pMatA);
+  foodPop = .5; pulse = 1; sfx.eat(); spawnFood(); updateHud();
+}
+function die(at, win) {
+  const [x, z] = cell(Math.max(0, Math.min(N - 1, at.x)), Math.max(0, Math.min(N - 1, at.y)));
+  if (!win) { burst(x, z, 30, pMatB); palette(true); shake = .6; }
+  if (navigator.vibrate) try { navigator.vibrate(180); } catch (e) {}
+  sfx.over(); if (score > best) { best = score; } store.set('snake3d.best', best);
+  setState('dead'); updateHud();
+}
+
+/* ===== UI MANAGEMENT ===== */
+function updateHud() {
+  $('hScore').textContent = score | 0; $('hBest').textContent = best; $('hLevel').textContent = level || 1;
+  $('hSpeed').textContent = (165 / (interval || 165)).toFixed(1) + 'x'; $('menuBest').textContent = best;
+}
+function setState(s) {
+  state = s;
+  $('menu').classList.toggle('on', s === 'menu');
+  $('pause').classList.toggle('on', s === 'pause');
+  $('over').classList.toggle('on', s === 'dead' && overShown);
+  $('hud').classList.toggle('on', s !== 'menu');
+  $('dpad').classList.toggle('on', s === 'play' || s === 'pause' || (s === 'dead' && !overShown));
+  $('pauseBtn').textContent = s === 'pause' ? '▶' : '❚❚';
+  $('pauseBtn').setAttribute('aria-label', s === 'pause' ? 'Resume' : 'Pause');
+  fit();
+}
+function showOver() {
+  overShown = true;
+  const nb = score > 0 && score >= best;
+  $('oScore').textContent = score; $('oBest').textContent = best; $('oLevel').textContent = level;
+  $('nb').style.display = nb ? 'block' : 'none';
+  setState('dead');
+}
+function startGame() { reset(); setState('play'); sfx.start(); }
+function togglePause() {
+  if (state === 'play') setState('pause'); else if (state === 'pause') setState('play');
+}
+function goMenu() { palette(false); overShown = false; setState('menu'); updateHud(); }
+
+const on = (id, fn) => $(id).addEventListener('click', e => { unlock(); sfx.click(); e.currentTarget.blur(); fn(); });
+on('startBtn', startGame); on('restartBtn', startGame); on('pRestartBtn', startGame); on('againBtn', startGame);
+on('pauseBtn', togglePause); on('resumeBtn', togglePause);
+on('pMenuBtn', goMenu); on('oMenuBtn', goMenu);
+$('exitGameBtn').addEventListener('click', () => { window.location.href = '../'; });
+$('exitGameBtn').addEventListener('click', () => { unlock(); sfx.click(); });
+function paintSound() { $('soundBtn').classList.toggle('off', !soundOn); }
+$('soundBtn').addEventListener('click', e => {
+  unlock(); soundOn = !soundOn; store.set('snake3d.sound', soundOn); paintSound(); sfx.click(); e.currentTarget.blur();
+});
+paintSound();
+
+/* ===== INPUT CONTROLS (keyboard) ===== */
+const KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
+addEventListener('keydown', e => {
+  unlock();
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key, active = state === 'play' || state === 'pause';
+  if (e.code === 'Space' || k === ' ') { if (active) { e.preventDefault(); if (!e.repeat) togglePause(); } return; }
+  const d = KEYS[k];
+  if (d) { if (active) e.preventDefault(); setDir(d[0], d[1]); }
+});
+addEventListener('keyup', e => { if (e.code === 'Space' && (state === 'play' || state === 'pause')) e.preventDefault(); });
+
+/* ===== TOUCH CONTROLS (swipe + virtual D-pad) ===== */
+let tx = 0, ty = 0;
+cv.addEventListener('touchstart', e => { unlock(); const t = e.changedTouches[0]; tx = t.clientX; ty = t.clientY; e.preventDefault(); }, { passive: false });
+cv.addEventListener('touchmove', e => {
+  e.preventDefault(); const t = e.changedTouches[0], dx = t.clientX - tx, dy = t.clientY - ty;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  if (Math.abs(dx) > Math.abs(dy)) setDir(Math.sign(dx), 0); else setDir(0, Math.sign(dy));
+  tx = t.clientX; ty = t.clientY;
+}, { passive: false });
+cv.addEventListener('touchend', e => e.preventDefault(), { passive: false });
+document.querySelectorAll('.d').forEach(b => {
+  const d = b.dataset.d.split(',').map(Number);
+  b.addEventListener('pointerdown', e => { e.preventDefault(); unlock(); setDir(d[0], d[1]); });
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') togglePause(); });
+
+/* ===== RENDER / RESIZE ===== */
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  R.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); R.setSize(w, h, false);
+  cam.aspect = w / h;
+  const vf = cam.fov * Math.PI / 360, hf = Math.atan(Math.tan(vf) * cam.aspect);
+  const play = state !== 'menu', dp = $('dpad').offsetHeight;
+  const top = play ? $('hud').offsetHeight + 4 : 0, bot = play ? (dp ? dp + 28 : 14) : 0, uh = Math.max(h - top - bot, 120);
+  camD = Math.max(12.8 / Math.tan(hf), 10.8 / Math.tan(vf) * h / uh);
+  if (top === bot) cam.clearViewOffset(); else cam.setViewOffset(w, h, 0, (bot - top) / 2, w, h);
+  cam.updateProjectionMatrix();
+}
+addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 150));
+
+const D = new THREE.Object3D();
+function put(i, x, z, s) {
+  if (i === 0) { head.position.set(x, .5, z); return; }
+  D.position.set(x, .5, z); D.scale.setScalar(s); D.updateMatrix(); bodyM.setMatrixAt(i - 1, D.matrix);
+}
+function turn(a, k) {
+  let d = a - headAng; d = Math.atan2(Math.sin(d), Math.cos(d)); headAng += d * k; head.rotation.y = headAng;
+}
+function pose(t, dt) {
+  const n = snake.length;
+  for (let i = 0; i < n; i++) {
+    const a = from[i], b = snake[i], c = cell(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t); put(i, c[0], c[1], .84);
+  }
+  turn(Math.atan2(dir.x, dir.y), Math.min(1, dt * 14));
+  bodyM.count = n - 1; bodyM.instanceMatrix.needsUpdate = true;
+}
+const menuP = s => [Math.cos(s * .8) * 7.5, Math.sin(s * 1.2) * 6.5];
+function menuPose(T) {
+  const n = 20;
+  for (let i = 0; i < n; i++) { const p = menuP(T - i * .14); put(i, p[0], p[1], .84); }
+  const a = menuP(T), b = menuP(T + .02); turn(Math.atan2(b[0] - a[0], b[1] - a[1]), 1);
+  bodyM.count = n - 1; bodyM.instanceMatrix.needsUpdate = true;
+}
+
+let last = performance.now(), T = 0;
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - last) / 1000, .1); last = now; T += dt;
+  if (state === 'play') {
+    acc += dt * 1000;
+    for (let g = 0; acc >= interval && state === 'play' && g < 5; g++) { acc -= interval; step(); }
+  } else if (state === 'dead' && !overShown) { deadT += dt; if (deadT > .9) showOver(); }
+
+  if (state === 'menu') menuPose(T); else pose(state === 'play' || state === 'pause' ? acc / interval : 0, dt);
+
+  pulse = Math.max(0, pulse - dt * 4); head.scale.setScalar(1 + pulse * .25);
+  foodPop = Math.max(0, foodPop - dt * 3); foodS += (1 - foodS) * Math.min(1, dt * 8);
+  if (foodPos) {
+    food.visible = state !== 'menu'; food.rotation.y = T * 1.5; food.position.y = .6 + Math.sin(T * 3) * .09;
+    food.scale.setScalar(foodS * (1 + .07 * Math.sin(T * 5)));
+    foodLight.intensity = 1 + .4 * Math.sin(T * 5);
+  } else food.visible = false;
+
+  for (const p of parts) {
+    if (p.life <= 0) continue;
+    p.life -= dt * 1.5; p.v.y -= 9 * dt; p.m.position.addScaledVector(p.v, dt);
+    if (p.m.position.y < .1) { p.m.position.y = .1; p.v.y *= -.4; }
+    if (p.life <= 0) p.m.visible = false; else p.m.scale.setScalar(p.life);
+  }
+
+  const k = Math.min(1, dt * 3), menu = state === 'menu';
+  camEl += ((menu ? .78 : 1) - camEl) * k; camAz += ((menu ? Math.sin(T * .25) * .55 : 0) - camAz) * k;
+  let sx = 0, sy = 0;
+  if (shake > 0) { shake = Math.max(0, shake - dt * 1.4); sx = (Math.random() - .5) * shake; sy = (Math.random() - .5) * shake; }
+  cam.position.set(camD * Math.cos(camEl) * Math.sin(camAz) + sx, camD * Math.sin(camEl) + sy, camD * Math.cos(camEl) * Math.cos(camAz));
+  cam.lookAt(0, 0, 0);
+  R.render(scene, cam);
+}
+
+addEventListener('pagehide', () => { R.dispose(); });
+updateHud(); fit(); requestAnimationFrame(loop);
 })();
 </script>
-
-<script src="../assets/js/app.js"></script>
 </body>
 </html>
